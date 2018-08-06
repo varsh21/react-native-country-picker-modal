@@ -13,7 +13,7 @@ import {
   Modal,
   Text,
   TextInput,
-  ListView,
+  FlatList,
   ScrollView,
   Platform
 } from 'react-native'
@@ -153,7 +153,7 @@ export default class CountryPicker extends Component {
     this.state = {
       modalVisible: false,
       cca2List: countryList,
-      dataSource: ds.cloneWithRows(countryList),
+      dataSource: countryList,
       filter: '',
       letters: this.getLetters(countryList)
     }
@@ -196,7 +196,7 @@ export default class CountryPicker extends Component {
     if (nextProps.countryList !== this.props.countryList) {
       this.setState({
         cca2List: nextProps.countryList,
-        dataSource: ds.cloneWithRows(nextProps.countryList)
+        dataSource: nextProps.countryList
       })
     }
   }
@@ -205,7 +205,7 @@ export default class CountryPicker extends Component {
     this.setState({
       modalVisible: false,
       filter: '',
-      dataSource: ds.cloneWithRows(this.state.cca2List)
+      dataSource: this.state.cca2List
     })
 
     this.props.onChange({
@@ -220,7 +220,7 @@ export default class CountryPicker extends Component {
     this.setState({
       modalVisible: false,
       filter: '',
-      dataSource: ds.cloneWithRows(this.state.cca2List)
+      dataSource: this.state.cca2List
     })
     if (this.props.onClose) {
       this.props.onClose()
@@ -260,6 +260,8 @@ export default class CountryPicker extends Component {
     this.setState({ modalVisible: true })
   }
 
+  getItemLayout = (data, index) => ({ length: this.itemHeight, offset: this.itemHeight * index, index })
+
   scrollTo(letter) {
     // find position of first country that starts with letter
     const index = this.state.cca2List
@@ -268,16 +270,10 @@ export default class CountryPicker extends Component {
     if (index === -1) {
       return
     }
-    let position = index * this.itemHeight
-
-    // do not scroll past the end of the list
-    if (position + this.visibleListHeight > this.listHeight) {
-      position = this.listHeight - this.visibleListHeight
-    }
 
     // scroll
-    this._listView.scrollTo({
-      y: position
+    this.refs.flatList.scrollToIndex({
+      index: index
     })
   }
 
@@ -285,11 +281,11 @@ export default class CountryPicker extends Component {
     const filteredCountries =
       value === '' ? this.state.cca2List : this.fuse.search(value)
 
-    this._listView.scrollTo({ y: 0 })
+    this.refs.flatList.scrollToIndex({ index: 0 })
 
     this.setState({
       filter: value,
-      dataSource: ds.cloneWithRows(filteredCountries)
+      dataSource: filteredCountries
     })
   }
 
@@ -330,8 +326,8 @@ export default class CountryPicker extends Component {
           <Text style={styles.countryName} allowFontScaling={false}>
             {this.getCountryName(country)}
             {this.props.showCallingCode &&
-            country.callingCode &&
-            <Text>{` (+${country.callingCode})`}</Text>}
+              country.callingCode &&
+              <Text>{` (+${country.callingCode})`}</Text>}
           </Text>
         </View>
       </View>
@@ -353,16 +349,16 @@ export default class CountryPicker extends Component {
     return renderFilter ? (
       renderFilter({ value, onChange, onClose })
     ) : (
-      <TextInput
-        autoFocus={autoFocusFilter}
-        autoCorrect={false}
-        placeholder={filterPlaceholder}
-        placeholderTextColor={filterPlaceholderTextColor}
-        style={[styles.input, !this.props.closeable && styles.inputOnly]}
-        onChangeText={onChange}
-        value={value}
-      />
-    )
+        <TextInput
+          autoFocus={autoFocusFilter}
+          autoCorrect={false}
+          placeholder={filterPlaceholder}
+          placeholderTextColor={filterPlaceholderTextColor}
+          style={[styles.input, !this.props.closeable && styles.inputOnly]}
+          onChangeText={onChange}
+          value={value}
+        />
+      )
   }
 
   render() {
@@ -376,15 +372,15 @@ export default class CountryPicker extends Component {
           {this.props.children ? (
             this.props.children
           ) : (
-            <View
-              style={[styles.touchFlag, { marginTop: isEmojiable ? 0 : 5 }]}
-            >
-              {CountryPicker.renderFlag(this.props.cca2,
-                styles.itemCountryFlag,
-                styles.emojiFlag,
-                styles.imgStyle)}
-            </View>
-          )}
+              <View
+                style={[styles.touchFlag, { marginTop: isEmojiable ? 0 : 5 }]}
+              >
+                {CountryPicker.renderFlag(this.props.cca2,
+                  styles.itemCountryFlag,
+                  styles.emojiFlag,
+                  styles.imgStyle)}
+              </View>
+            )}
         </TouchableOpacity>
         <Modal
           transparent={this.props.transparent}
@@ -405,18 +401,14 @@ export default class CountryPicker extends Component {
             </View>
             <KeyboardAvoidingView behavior="padding">
               <View style={styles.contentContainer}>
-                <ListView
-                  keyboardShouldPersistTaps="always"
-                  enableEmptySections
-                  ref={listView => (this._listView = listView)}
-                  dataSource={this.state.dataSource}
-                  renderRow={country => this.renderCountry(country)}
-                  initialListSize={30}
-                  pageSize={15}
-                  onLayout={({ nativeEvent: { layout: { y: offset } } }) =>
-                    this.setVisibleListHeight(offset)
-                  }
+                <FlatList
+                  ref={'flatList'}
+                  data={this.state.dataSource}
+                  getItemLayout={this.getItemLayout}
+                  renderItem={({ item }) => this.renderCountry(item)}
+                  keyExtractor={item => item}
                 />
+
                 {!this.props.hideAlphabetFilter && (
                   <ScrollView
                     contentContainerStyle={styles.letters}
