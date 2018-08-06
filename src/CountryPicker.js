@@ -51,8 +51,6 @@ const setCountries = flagType => {
   }
 }
 
-const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 })
-
 setCountries()
 
 export const getAllCountries = () =>
