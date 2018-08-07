@@ -385,6 +385,7 @@ export default class CountryPicker extends Component {
           animationType={this.props.animationType}
           visible={this.state.modalVisible}
           onRequestClose={() => this.setState({ modalVisible: false })}
+          supportedOrientations={['portrait', 'landscape']}
         >
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.header}>
